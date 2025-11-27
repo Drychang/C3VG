@@ -2,6 +2,7 @@ import time
 import argparse
 import os.path as osp
 import torch.distributed as dist
+import os
 
 import mmcv
 from mmcv import Config, DictAction
@@ -13,7 +14,7 @@ from c3vg.datasets import build_dataset, build_dataloader
 from c3vg.models import build_model, ExponentialMovingAverage
 from c3vg.apis import set_random_seed, train_model, evaluate_model
 from c3vg.utils import get_root_logger, load_checkpoint, save_checkpoint, load_pretrained_checkpoint, is_main, init_dist
-import wandb
+# import wandb
 
 import warnings
 
@@ -63,7 +64,8 @@ def main_worker(cfg):
         #     wandb.init(project="simvg-seg-offline", tags=[cfg.tag_name], name=cfg.wandb_name, mode="offline")
         # else:
         #     wandb.init(project="simvg-seg", tags=[cfg.tag_name], name=cfg.wandb_name)
-        wandb.init(project="simvg-seg-offline", tags=[cfg.tag_name], name=cfg.wandb_name, mode="offline")
+        # os.environ["WANDB_MODE"] = "disable"
+        # wandb.init(project="simvg-seg-offline", tags=[cfg.tag_name], name=cfg.wandb_name, mode="offline")
         logger = get_root_logger(log_file=osp.join(cfg.work_dir, str(cfg.timestamp) + "_train_log.txt"))
         logger.info(cfg.pretty_text)
         cfg.dump(osp.join(cfg.work_dir, f"{cfg.timestamp}_" + osp.basename(cfg.config)))
@@ -203,15 +205,15 @@ def main_worker(cfg):
             best_miou = max(miou, best_miou)
             best_oiou = max(oiou, best_oiou)
 
-            if is_main():
-                wandb.log(
-                    {
-                        "best_d_acc": best_d_acc,
-                        "best_miou": best_miou,
-                        "best_oiou": best_oiou,
-                        "total_time": total_time,
-                    }
-                )
+            # if is_main():
+                # wandb.log(
+                #     {
+                #         "best_d_acc": best_d_acc,
+                #         "best_miou": best_miou,
+                #         "best_oiou": best_oiou,
+                #         "total_time": total_time,
+                #     }
+                # )
 
         scheduler.step()
 
@@ -221,7 +223,7 @@ def main_worker(cfg):
     if cfg.distributed:
         dist.destroy_process_group()
 
-    wandb.finish()
+    # wandb.finish()
 
 
 def main():

@@ -10,7 +10,7 @@ from .test import accuracy
 from c3vg.datasets import extract_data
 from c3vg.utils import get_root_logger, reduce_mean, is_main
 from collections import defaultdict
-import wandb
+# import wandb
 
 try:
     import apex
@@ -184,31 +184,31 @@ def train_model(epoch, cfg, model, model_ema, optimizer, loader):
                     # + f"fs_MaskACC@0.5-0.9: [{mask_acc_fs[0]:.2f}, {mask_acc_fs[1]:.2f}, {mask_acc_fs[2]:.2f},  {mask_acc_fs[3]:.2f},  {mask_acc_fs[4]:.2f}]"
                 )
 
-                wandb.log(
-                    {
-                        "loss_det": sum(loss_det_list) / len(loss_det_list),
-                        "loss_mask": sum(loss_mask_list) / len(loss_mask_list),
-                        "loss_cons": sum(loss_cons_list) / len(loss_cons_list),
-                        # "loss_cons_fs": sum(loss_cons_fs_list) / len(loss_cons_fs_list),
-                        # "loss_cons_ss": sum(loss_cons_ss_list) / len(loss_cons_ss_list),
-                        "lr": optimizer.param_groups[0]["lr"],
-                        "DetACC@0.5": det_acc,
-                        "fs_DetACC@0.5": det_acc_fs,
-                        "mIoU": mask_miou,
-                        "fs_mIoU": mask_miou_fs,
-                        "oIoU": mask_oiou,
-                        "fs_oIoU": mask_oiou_fs,
-                        "MaskACC@0.5": mask_acc[0],
-                        "MaskACC@0.6": mask_acc[1],
-                        "MaskACC@0.7": mask_acc[2],
-                        "MaskACC@0.8": mask_acc[3],
-                        "MaskACC@0.9": mask_acc[4],
-                        "fs_MaskACC@0.5": mask_acc_fs[0],
-                        "fs_MaskACC@0.6": mask_acc_fs[1],
-                        "fs_MaskACC@0.7": mask_acc_fs[2],
-                        "fs_MaskACC@0.8": mask_acc_fs[3],
-                        "fs_MaskACC@0.9": mask_acc_fs[4],
-                    }
-                )
+                # wandb.log(
+                #     {
+                #         "loss_det": sum(loss_det_list) / len(loss_det_list),
+                #         "loss_mask": sum(loss_mask_list) / len(loss_mask_list),
+                #         "loss_cons": sum(loss_cons_list) / len(loss_cons_list),
+                #         # "loss_cons_fs": sum(loss_cons_fs_list) / len(loss_cons_fs_list),
+                #         # "loss_cons_ss": sum(loss_cons_ss_list) / len(loss_cons_ss_list),
+                #         "lr": optimizer.param_groups[0]["lr"],
+                #         "DetACC@0.5": det_acc,
+                #         "fs_DetACC@0.5": det_acc_fs,
+                #         "mIoU": mask_miou,
+                #         "fs_mIoU": mask_miou_fs,
+                #         "oIoU": mask_oiou,
+                #         "fs_oIoU": mask_oiou_fs,
+                #         "MaskACC@0.5": mask_acc[0],
+                #         "MaskACC@0.6": mask_acc[1],
+                #         "MaskACC@0.7": mask_acc[2],
+                #         "MaskACC@0.8": mask_acc[3],
+                #         "MaskACC@0.9": mask_acc[4],
+                #         "fs_MaskACC@0.5": mask_acc_fs[0],
+                #         "fs_MaskACC@0.6": mask_acc_fs[1],
+                #         "fs_MaskACC@0.7": mask_acc_fs[2],
+                #         "fs_MaskACC@0.8": mask_acc_fs[3],
+                #         "fs_MaskACC@0.9": mask_acc_fs[4],
+                #     }
+                # )
 
         end = time.time()

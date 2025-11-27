@@ -22,8 +22,6 @@ train_pipeline = [
     dict(type="Resize", img_scale=(img_size, img_size), keep_ratio=False),
     dict(type="Normalize", **img_norm_cfg),
     dict(type="Pad", size_divisor=32),
-    # dict(type='SampleMaskVertices', num_ray=18, center_sampling=False),
-    # dict(type='Pad', pad_to_square=True),
     dict(type="DefaultFormatBundle"),
     dict(
         type="CollectData",
@@ -43,7 +41,6 @@ val_pipeline = [
     dict(type="Resize", img_scale=(img_size, img_size), keep_ratio=False),
     dict(type="Normalize", **img_norm_cfg),
     dict(type="Pad", size_divisor=32),
-    # dict(type='Pad', pad_to_square=True),
     dict(type="DefaultFormatBundle"),
     dict(
         type="CollectData",
@@ -52,8 +49,9 @@ val_pipeline = [
 ]
 test_pipeline = val_pipeline.copy()
 
+# ⭐ 在這裡重新定義 data，覆蓋 base 裡的 batch / pipeline 設定
 data = dict(
-    samples_per_gpu=16,
+    samples_per_gpu=4,   # 先用 4，不夠再降到 2
     workers_per_gpu=4,
     train=dict(
         pipeline=train_pipeline,
@@ -95,7 +93,7 @@ model = dict(
         vocab_size=64010,
         freeze_layer=-1,
         vision_embed_proj_interpolate=False,
-        pretrain="pretrain_weights/beit3_base_patch16_224.zip",
+        pretrain="pretrain_weights/beit3_base_patch16_224.pth",
     ),
     lan_enc=None,
     fusion=None,
@@ -110,19 +108,23 @@ model = dict(
             "boxsegcc": {"S2B": 0.3, "B2S": 0.1, "cem": 0.0},
             "stage": {"first": 0.3, "second": 1.0},
         },
-        query_augment={"num_queries":1},
+        query_augment={"num_queries": 1},
         threshold={"B2S": 0.5, "S2B": 0.5},
         decoder_upsample_type="fpn",
         start_epoch=-1,
-        uim={"enable": True, "weighted_compose": "boxmask", "enable_box_coorinate_embed": True, "box_weights": [0.1, 1.0]},
+        uim={
+            "enable": True,
+            "weighted_compose": "boxmask",
+            "enable_box_coorinate_embed": True,
+            "box_weights": [0.1, 1.0],
+        },
     ),
 )
 
 grad_norm_clip = 0.15
+# use_fp16 = True   # ⭐ 建議開啟半精度，省顯存
 use_fp16 = False
 ema = False
-# work_dir = "work_dir/seqtr_det_refcoco-unc_pvtv2mmb1_mix_type1_detectionpretrain_nofreeze_fusionv3_lr0.0003_ema_ep30"
-# work_dir = "work_dir/paper_exp/decoder_ablation/ViTBaseP32-1.0decoder-40ep-512hw-refcocounc"
 
 lr = 0.0005
 optimizer_config = dict(

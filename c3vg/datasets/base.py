@@ -87,68 +87,63 @@ class BaseDataset_Ori(Dataset):
 class BaseDataset(Dataset):
     def __init__(self, imgsfile, annsfile, pipeline, which_set="train", img_source=["coco"], word_emb_cfg=None):
         super(BaseDataset, self).__init__()
-        assert isinstance(which_set, str) and which_set in [
-            "train",
-            "val",
-            "testA",
-            "testB",
-            "test",
-            "val_refcoco_unc",
-            "testA_refcoco_unc",
-            "testB_refcoco_unc",
-            "val_refcocoplus_unc",
-            "testA_refcocoplus_unc",
-            "testB_refcocoplus_unc",
-            "val_refcocog_umd",
-            "test_refcocog_umd",
-            "val_flickr30k",
-            "val_referitgame_berkeley",
-            "val_refcocog_google",
-        ]
+
         self.which_set = which_set
+        
+        # 單一來源 / 多來源
         if len(img_source) == 1:
-            assert img_source[0] in ["coco", "visual-genome", "flickr", "saiaprtc12"]
-            self.imgsfile = imgsfile
-        elif len(img_source) > 1:
-            assert len(imgsfile) == len(img_source)
-            assert isinstance(imgsfile, dict)
             self.imgsfile = imgsfile
         else:
-            raise TypeError("None")
+            self.imgsfile = imgsfile
 
-        self.anns_all = json.load(open(annsfile, "r"))[which_set]
+        # 1. 讀完整 JSON（dict）
+        self.anns_all = json.load(open(annsfile, "r"))
 
-        self.token2idx, self.idx2token, self.word_emb = tokenize(annsfile, self.anns_all, word_emb_cfg)
+        # 2. tokenize() 必須拿到完整 dict
+        self.token2idx, self.idx2token, self.word_emb = tokenize(
+            annsfile, self.anns_all, word_emb_cfg
+        )
 
+        # 3. 取出該 split annotations（list）
+        self.anns = self.anns_all[self.which_set]
+
+        # 4. 過濾 data_source（如果存在）
         if which_set == "train":
-            if self.anns_all[0].get("data_source", None) is not None:
-                self.anns_all = [ann for ann in self.anns_all if ann["data_source"] in img_source]
+            if self.anns and isinstance(self.anns, list) and isinstance(self.anns[0], dict):
+                if "data_source" in self.anns[0]:
+                    self.anns = [ann for ann in self.anns if ann["data_source"] in img_source]
+
             self._set_group_flag()
+
         self.pipeline = Compose(pipeline)
 
-        if self.pipeline.transforms[0].use_token_type == "copus":
-            self.num_token = len(self.pipeline.transforms[0].copus)
-        elif self.pipeline.transforms[0].use_token_type == "bert":
-            self.num_token = self.pipeline.transforms[0].tokenizer.vocab_size
+        # 判斷文字 token 類型
+        t0 = self.pipeline.transforms[0]
+        if t0.use_token_type == "copus":
+            self.num_token = len(t0.copus)
+        elif t0.use_token_type == "bert":
+            self.num_token = t0.tokenizer.vocab_size
         else:
             self.num_token = len(self.token2idx)
 
     def _set_group_flag(self):
-        self.flag = numpy.zeros(len(self), dtype=numpy.uint8)
-        for i in range(len(self)):
-            ann = self.anns_all[i]
+        self.flag = numpy.zeros(len(self.anns), dtype=numpy.uint8)
+        for i, ann in enumerate(self.anns):
             if ann["width"] / ann["height"] > 1:
                 self.flag[i] = 1
 
     def __getitem__(self, index):
-        results = {"ann": self.anns_all[index], "which_set": self.which_set, "token2idx": self.token2idx, "imgsfile": self.imgsfile}
-
-        results = self.pipeline(results)
-
-        return results
+        results = {
+            "ann": self.anns[index],
+            "which_set": self.which_set,
+            "token2idx": self.token2idx,
+            "imgsfile": self.imgsfile,
+        }
+        return self.pipeline(results)
 
     def __len__(self):
-        return len(self.anns_all)
+        return len(self.anns)
+
 
 
 class BaseDatasetCRIS(Dataset):
